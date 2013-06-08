@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -10,9 +11,14 @@ import (
 
 func main() {
 	log.SetFlags(0)
+
+	var playerName string
+	flag.StringVar(&playerName, "player", "", "media player to control")
+	flag.Parse()
 	
-	if len(os.Args) < 2 {
-		log.Fatalf("usage: %s <cmd> [param...]", os.Args[0])
+	cmd := flag.Arg(0)
+	if cmd == "" {
+		log.Fatalf("Usage: %s [<options>] <cmd> [<params>]", os.Args[0])
 	}
 
 	conn, err := mpris2.Connect()
@@ -20,12 +26,30 @@ func main() {
 		log.Fatal(err)
 	}
 
-	mp, err := conn.GetFirstMediaPlayer()
+	if cmd == "list" {
+		names, err := conn.ListMediaPlayers()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		for _, name := range names {
+			fmt.Println(name)
+		}
+		os.Exit(0)
+	}
+	
+	var mp *mpris2.MediaPlayer
+	if playerName == "" {
+		mp, err = conn.GetFirstMediaPlayer()
+	} else {
+		mp = conn.GetMediaPlayer(playerName)
+	}
+	
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	switch cmd := os.Args[1]; cmd {
+	switch cmd {
 	case "play":
 		err = mp.Play()
 	case "pause":
@@ -40,22 +64,22 @@ func main() {
 		err = mp.Next()
 
 	case "seek":
-		if len(os.Args) != 3 {
-			log.Fatalf("usage: %s seek <offset>", os.Args[0])
+		if flag.NArg() != 2 {
+			log.Fatalf("Usage: %s seek <offset>", os.Args[0])
 		}
 
 		var offset int64
-		_, err = fmt.Sscan(os.Args[2], &offset)
+		_, err = fmt.Sscan(flag.Arg(1), &offset)
 		if err == nil {
 			err = mp.Seek(offset)
 		}
 
 	case "open":
-		if len(os.Args) != 3 {
+		if flag.NArg() != 2 {
 			log.Fatalf("usage: %s open <uri>", os.Args[0])
 		}
 
-		err = mp.OpenUri(os.Args[2])
+		err = mp.OpenUri(flag.Arg(1))
 
 	case "identity":
 		var identity string
@@ -89,8 +113,8 @@ func main() {
 		var data mpris2.Metadata
 		data, err = mp.Metadata()
 		if err == nil {
-			if len(os.Args) > 2 {
-				for _, k := range os.Args[2:] {
+			if flag.NArg() > 1 {
+				for _, k := range flag.Args()[1:] {
 					fmt.Println(data[k])
 				}
 			} else {

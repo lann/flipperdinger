@@ -40,7 +40,7 @@ func main() {
 	
 	var mp *mpris2.MediaPlayer
 	if playerName == "" {
-		mp, err = conn.GetFirstMediaPlayer()
+		mp, err = conn.GetAnyMediaPlayer()
 	} else {
 		mp = conn.GetMediaPlayer(playerName)
 	}

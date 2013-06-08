@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 	"github.com/lann/mpris2"
 )
 
@@ -35,6 +36,34 @@ func main() {
 		err = mp.Previous()
 	case "next":
 		err = mp.Next()
+		
+    case "metadata":
+		data, err := mp.Metadata()
+		if err == nil {
+			if len(os.Args) > 2 {
+				for _, k := range os.Args[2:] {
+					fmt.Println(data[k])
+				}
+			} else {
+				keys := make([]string, len(data))
+				i := 0
+				maxLen := 0
+				for k := range data {
+					keys[i] = k
+					i++
+					if len(k) > maxLen {
+						maxLen = len(k)
+					}
+				}
+
+				sort.Strings(keys)
+
+				for _, k := range keys {
+					fmt.Printf("%-*s  %v\n", maxLen, k, data[k])
+				}
+			}
+		}
+		
 	default:
 		err = fmt.Errorf("Unknown cmd %s", cmd)
 	}
